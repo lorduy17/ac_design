@@ -44,11 +44,12 @@ def rate_of_climb_plot(ax,RoC,RoC_max_value,V):
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
 def roc_height_plot(ax,RoC,h):
-    ax.plot(RoC*60*1e-3,h*3.28084*1e-3)
-    ax.set_xlabel(r"$\frac{R}{C}{_max}, ft/min \cdot 10^3$")
-    ax.set_ylabel(r"$Height, ft \cdot 10^3$")
+    ax.plot(RoC*60*1e-4,h*3.28084*1e-4)
+    ax.set_xlabel(r"$\frac{R}{C}{_max}, ft/min \cdot 10^4$")
+    ax.set_ylabel(r"$Height, ft \cdot 10^4$")
+    ax.legend()
     ax.grid(True)
-def climb_time_plot(ax,roc,h,time,idx):
+def climb_time_plot(ax,roc,h,time):
     h = h*1e-3
     roc = roc*1e3
     ax.plot(h,roc,color="darkblue",label=f"Time to climb = {time:.2f}")
@@ -83,11 +84,12 @@ def plot_ac_performance(CJ1,points):
     fig, ax = plt.subplots(1)
     h = np.linspace(0,11e3,points)
     roc_height_plot(ax,RoC_max_values,h)
+    plt.tight_layout()
     plt.show(block = False)
     # Figure 4
     fig, ax = plt.subplots(1)
-    roc_inv,h,time,idx = f.climb_time(CJ1,RoC,h)
-    climb_time_plot(ax,roc_inv,h,time,idx)
+    roc_inv,h,time = f.climb_time(CJ1,RoC_max_values,h)
+    climb_time_plot(ax,roc_inv,h,time)
     plt.show()
 CJ1 = {"type":"jett",
     "v_range":{"value":[100,1000],"unit":"ft/s"},
@@ -110,5 +112,5 @@ CP1 = {"type":"propeller",
     "Power available": {"value":230*550,"unit":"HP"},
     "eta": 0.8
     }
-plot_ac_performance(CP1,1000)
-plot_ac_performance(CJ1,1000)
+plot_ac_performance(CJ1,100)
+plot_ac_performance(CP1,100)

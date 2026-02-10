@@ -59,7 +59,7 @@ def power(ac_pars,Tr,V,rho):
             Pa = np.ones_like(V)*ac_pars["eta"]*ac_pars["Power available"]["value"] # Pa in lb*ft/s
     else: ## jett
         rho_0 = ac_pars["rho"]["value"]
-        Ta = ac_pars["Thrust max"]["value"]*rho/rho_0
+        Ta = ac_pars["Thrust max"]["value"]*np.sqrt(rho/rho_0)
         Pa = Ta*V
     return Pr,Pa
 def operation_speeds(ac_pars,AE_max):
@@ -95,25 +95,23 @@ def rate_of_climb(ac_pars,Pa,Pr,V):
         Tr = thrust_required(ac_pars,AE)
         Pr,Pa = power(ac_pars,Tr,V,iterable)
         RoC = (Pa-Pr)/ac_pars["W"]["value"]
+        RoC_array.append(RoC)
         roc_max = max(RoC)
         RoC_array_max.append(roc_max)
-        RoC_array.append(RoC)
-    RoC_array_max = np.asarray(RoC_array_max,dtype=float)
+    roc_array_max = np.asarray(RoC_array_max,dtype=float)
     roc = np.asarray(RoC_array[0])
     roc_max = max(roc)
-    return roc,roc_max,RoC_array_max
-def climb_time(ac_pars,roc,h):
+    return roc,roc_max,roc_array_max
+def climb_time(ac_pars,roc_max,h):
     if ac_pars["type"].casefold() == "jett":
         obj_roc = 500
     else:
         obj_roc = 100
-    h = h*3.2
-    roc = roc*60
-    idx = np.argmin(np.abs(roc-obj_roc))
-    h = h[:idx+1]
-    roc_inv = 1/(roc)
-    roc_inv = roc_inv[:idx+1]
+    h = h*3.20884
+    roc_mins = roc_max*60
+    idx = np.argmin(np.abs(roc_mins-obj_roc))
+    roc_inv = 1/(roc_mins)
     t = simpson(roc_inv, h)
-    return roc_inv,h,t,idx
+    return roc_inv,h,t
 
 #%%
