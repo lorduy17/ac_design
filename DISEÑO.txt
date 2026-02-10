@@ -1,0 +1,46 @@
+DISEÑO 
+
+
+DESIGN CONSIDERATIONS *****
+For conventional subsonic airplanes is important consider cd0 for the balance.
+
+** the book say for low velocities q is low and therefore CL is large. This conditions due CDi increases more faster than q_inf decreases and D and hence Tr increase. Cauese the cdi = cl**2/(cte). At the condition of describe the book. The airplane need more CL for reach the Tr.
+
+When the calc the min of function Tr. CDi = CD0 in this point the L/D is max.
+ 
+The potency is inversed proporcianal that CL**(3/2)/CD. So at the velocity for min power_req corresponds to maximun CL**(3/2).
+The AERODYNAMIC CONDITIONS for hold minimun power required, the CD0 = CDi/3
+
+
+***
+Define endurence and range are diff for jett and propeller.
+
+Propeller.
+
+Critical factors:
+- SFC: specific fue consumtion.
+
+Endurence: min consume pounds of fuel per hour.
+ --> So, max endurence occurs when airplane fly at mínimum power required. (CD0 = 1/3 CDi) --> (CL**(3/2)/CD)max
+Range: min consume pounds of fuel per mi (fuel/distance)
+ --> max range occurs at max L/D.
+	
+	DEF PROVIDE OF TANGENT POINT OF MIN Pr/V_inf
+
+
+JET.
+
+Maximum ENDURANCE for a jet airplane occurs when the airplane is flying at minimum
+thrust required. (L/D)max
+
+Range. Defined by TSCF*TA/V_inf -> (Ta/V_imf)min = tangent point of line since 0,0 with Tr curve
+ --> So occurs in the max of (CL**0.5)/CD
+
+~~ NOTE:
+ . For propeller the max endurance and range are defined since Power curve
+ . For jet the max endurance and range are defined since Tr curve
+
+
+
+
+***

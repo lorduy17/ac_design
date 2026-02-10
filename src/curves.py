@@ -1,0 +1,109 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import src.ops as f
+
+def power_required_plot(ax,V,Pr,Pa,ac_pars,AEmax):
+    W = ac_pars["W"]["value"]
+    vr,ve = f.operation_speeds(ac_pars,AEmax)
+    ax.plot(V,Pr/550,color="mediumorchid",label=r"$P_{required}$")
+    ax.plot(V,Pa/550,color="red",label=r"$P_{available}$")
+    if ac_pars["type"].casefold() == "propeller":
+        ax.axline((0,0),(vr,W/AEmax["1"]*vr/550),linestyle = "--",color="dimgray")
+    ax.axvline(x=vr, linestyle ="-.",color="black")
+    ax.axvline(x=ve, linestyle ="--",color="black")
+    ax.set_ylabel(r"P, $lbf \frac{ft}{s}$")
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.grid(True)
+def thrust_required_plot(ax,V,Tr,ac_pars,AEmax):
+    W = ac_pars["W"]["value"]
+    vr,ve = f.operation_speeds(ac_pars,AEmax)
+    ax.plot(V,Tr,color="mediumorchid",label=r"$T_{required}$")
+    if ac_pars["type"].casefold() == "jett":
+        ax.axline((0,0),(ve,W/AEmax["1/2"]),linestyle = "--",color="dimgray")
+    ax.axvline(x=vr, linestyle ="-.",color="black")
+    ax.axvline(x=ve, linestyle ="--",color="black")
+    ax.set_ylabel("Tr, lbf")
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.grid(True)
+def aerodynamic_ef_plot(ax,V,AE,AEmax,ac_pars):
+    ax.plot(V,AE["1"],label=r"$\frac{C_L}{C_D}$")
+    ax.plot(V,AE["1/2"],label = r"$\frac{\sqrt{C_L}}{C_D}$")
+    ax.plot(V,AE["3/2"],label=r"$\frac{\sqrt{C_L^3}}{C_D}$")
+    vr,ve = f.operation_speeds(ac_pars,AEmax)
+    ax.axvline(x=vr, linestyle ="-.",color="black",label=r"$V_{range}$")
+    ax.axvline(x=ve, linestyle ="--",color="black",label=r"$V_{endurance}$")
+    ax.set_xlabel(r"$V_{\infty}, \frac{ft}{s}$")
+    ax.set_ylabel(r"$\frac{C_L}{C_D}$")
+    ax.grid()
+    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+def rate_of_climb_plot(ax,RoC,RoC_max_value,V):
+    ax.plot(V,RoC,color="mediumorchid",label=r"$R_C$")
+    ax.axhline(y = RoC_max_value,linestyle="--",color="black",label=rf"$\frac{{R}}{{C}} = {RoC_max_value} \frac{{ft}}{{s}}$")
+    ax.set_xlabel(r"$V_{\infty}, \frac{ft}{s}$")
+    ax.set_ylabel(r"$\frac{R}{C}, \frac{ft}{s}$")
+    ax.legend(loc='upper left')
+    ax.grid(True)
+def roc_height_plot(ax,RoC,h):
+    ax.plot(RoC*60*1e-3,h*3.28084*1e-3)
+    ax.set_xlabel(r"$\frac{R}{C}, ft/min \cdot 10^3$")
+    ax.set_ylabel(r"$Height, ft \cdot 10^3$")
+    ax.grid(True)
+def climb_time_plot(ax,roc,h,time,idx):
+    h = h*1e-3
+    roc = roc*1e2
+    ax.plot(h,roc,label=f"Time to climb = {time}")
+    
+    ax.legend()
+def plot_ac_performance(CJ1):
+    V = np.linspace(CJ1["v_range"]["value"][0],CJ1["v_range"]["value"][1],100)
+    q_inf = f.q(V,CJ1["rho"]["value"])
+    AE,AE_max = f.aerodynamic_coeficients(CJ1,q_inf)
+    Tr = f.thrust_required(CJ1,AE)
+    Pr,Pa = f.power(CJ1,Tr,V,CJ1["rho"]["value"])
+    RoC,RoC_max_val,RoC_max_values = f.rate_of_climb(CJ1,Pa,Pr,AE_max,V)
+    # Figure 1
+    fig, ax = plt.subplots(3,1)
+    thrust_required_plot(ax[0],V,Tr,CJ1,AE_max)
+    power_required_plot(ax[1],V,Pr,Pa,CJ1,AE_max)
+    aerodynamic_ef_plot(ax[2],V,AE,AE_max,CJ1)
+    for axs in ax:
+        axs.set_xlim(CJ1["v_range"]["value"][0]-10,CJ1["v_range"]["value"][1]+10)
+    plt.tight_layout()
+    plt.show(block=False)
+    # Figure 2
+    fig, ax = plt.subplots(1)
+    rate_of_climb_plot(ax,RoC,RoC_max_val,V)
+    plt.show(block=False)
+    # Figure 3
+    fig, ax = plt.subplots(1)
+    h = np.linspace(0,11e3,100)
+    roc_height_plot(ax,RoC_max_values,h)
+    plt.show(block = False)
+    # Figure 4
+    fig, ax = plt.subplots(1)
+    roc_inv,h,time,idx = f.climb_time(CJ1,RoC,h)
+    climb_time_plot(ax,roc_inv,h,time,idx)
+    plt.show()
+CJ1 = {"type":"jett",
+    "v_range":{"value":[100,1000],"unit":"ft/s"},
+    "rho": {"value":0.0023769,"unit":"slugs/ft^3"},
+    "S": {"value":318,"unit":"ft^2"},  # 
+    "W": {"value":19815,"unit":"lbs"},
+    "CD0": 0.02,
+    "b": {"value":53.3,"unit":"ft"},
+    "e": 0.8,
+    "Thrust max": {"value":3650*2,"unit":"lbs"}
+}
+CP1 = {"type":"propeller",
+    "v_range":{"value":[100,350],"unit":"ft/s"},
+    "rho": {"value":0.0023769,"unit":"slugs/ft^3"},
+    "S": {"value":174,"unit":"ft^2"},  # 
+    "W": {"value":2950,"unit":"lbs"},
+    "CD0": 0.025,
+    "b": {"value":35.8,"unit":"ft"},
+    "e": 0.8,
+    "Power available": {"value":230*550,"unit":"HP"},
+    "eta": 0.8
+    }
+plot_ac_performance(CP1)
+plot_ac_performance(CJ1)

@@ -1,0 +1,201 @@
+==================================================
+MATH TEXT CHEAT SHEET
+Matplotlib / LaTeX-style (Ingeniería Aeronáutica)
+==================================================
+
+USO GENERAL
+-----------
+• SIEMPRE usar raw strings en Python:
+    r"$ ... $"
+
+• Todo símbolo matemático va entre $ $
+
+
+==================================================
+1. ABECEDARIO LATINO
+==================================================
+
+MAYÚSCULAS:
+A B C D E F G H I J K L M
+N O P Q R S T U V W X Y Z
+
+MINÚSCULAS:
+a b c d e f g h i j k l m
+n o p q r s t u v w x y z
+
+
+==================================================
+2. LETRAS GRIEGAS (MINÚSCULAS)
+==================================================
+
+\alpha      \beta       \gamma     \delta
+\epsilon    \zeta       \eta        \theta
+\iota       \kappa      \lambda     \mu
+\nu         \xi         \pi         \rho
+\sigma      \tau        \upsilon    \phi
+\chi        \psi        \omega
+
+Ejemplos:
+r"$\alpha$"
+r"$\theta$"
+
+
+==================================================
+3. LETRAS GRIEGAS (MAYÚSCULAS)
+==================================================
+
+\Gamma   \Delta   \Theta   \Lambda
+\Xi      \Pi      \Sigma   \Upsilon
+\Phi     \Psi     \Omega
+
+
+==================================================
+4. SUBÍNDICES Y SUPERÍNDICES
+==================================================
+
+SUBÍNDICES:
+C_L              -> r"$C_L$"
+C_{L_max}        -> r"$C_{L_{max}}$"
+C_{D0}           -> r"$C_{D0}$"
+V_inf            -> r"$V_\infty$"
+alpha_trim       -> r"$\alpha_{trim}$"
+
+SUPERÍNDICES:
+V^2              -> r"$V^2$"
+C_D^{min}        -> r"$C_D^{min}$"
+C_L^{3/2}        -> r"$C_L^{3/2}$"
+
+
+==================================================
+5. SÍMBOLOS COMUNES
+==================================================
+
+Infinito:
+\infty            -> r"$\infty$"
+
+Grados:
+^\circ            -> r"$^\circ$"
+
+Aproximación:
+\approx           -> r"$\approx$"
+
+Proporcional:
+\propto           -> r"$\propto$"
+
+Paréntesis:
+(  )              -> r"$(\alpha + \beta)$"
+
+
+==================================================
+6. FRACCIONES
+==================================================
+
+Fracción básica:
+\frac{a}{b}
+
+Ejemplos:
+r"$\frac{C_L}{C_D}$"
+r"$\frac{W}{qS}$"
+r"$\frac{1}{2}\rho V^2$"
+
+Fracción inline (recomendada para ejes):
+r"$C_L/C_D$"
+
+Fracción con paréntesis:
+r"$\frac{C_L}{C_{D0} + k C_L^2}$"
+
+
+==================================================
+7. RAÍCES
+==================================================
+
+Raíz cuadrada:
+\sqrt{x}
+
+Ejemplos:
+r"$\sqrt{C_L}$"
+r"$\frac{\sqrt{C_L}}{C_D}$"
+
+
+==================================================
+8. DERIVADAS
+==================================================
+
+Derivada ordinaria:
+\frac{dx}{dt}
+
+Derivada parcial:
+\frac{\partial x}{\partial t}
+
+Derivadas temporales:
+\dot{x}
+\ddot{x}
+
+Ejemplos:
+r"$\dot{\theta}$"
+r"$\ddot{\alpha}$"
+r"$\frac{dC_L}{d\alpha}$"
+
+
+==================================================
+9. VECTORES Y MAGNITUDES
+==================================================
+
+Vector:
+\vec{V}           -> r"$\vec{V}$"
+
+Vector (negrita):
+\mathbf{V}        -> r"$\mathbf{V}$"
+
+Magnitud:
+|\vec{V}|         -> r"$|\vec{V}|$"
+
+
+==================================================
+10. OPERADORES MATEMÁTICOS
+==================================================
+
+Suma:
++
+
+Producto:
+\cdot             -> r"$a \cdot b$"
+
+Igual:
+=
+
+Menor / Mayor:
+<   >
+
+Más/menos:
+\pm               -> r"$\pm$"
+
+
+==================================================
+11. TEXTO Y UNIDADES
+==================================================
+
+Texto dentro de ecuación:
+\text{ }
+
+Ejemplos:
+r"$V\ \text{[m/s]}$"
+r"$\alpha\ \text{[rad]}$"
+r"$q\ \text{[Pa]}$"
+
+
+==================================================
+12. EJEMPLOS AERONÁUTICOS COMPLETOS
+==================================================
+
+r"$C_L(\alpha)$"
+r"$\frac{L}{D}$"
+r"$\frac{C_L^{3/2}}{C_D}$"
+r"$V_\infty$"
+r"$q = \frac{1}{2}\rho V^2$"
+r"$\dot{\theta} = f(\alpha, q)$"
+
+
+==================================================
+FIN DEL ARCHIVO
+==================================================
