@@ -1,9 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import simpson 
 # 
 
-def rho_h():
-    h = np.linspace(0,11e3,100)
+def rho_h(points):
+    h = np.linspace(0,11e3,points)
     R = 287
     g = 9.80665
     t0 = 288.16 #K
@@ -81,16 +82,16 @@ def operation_speeds(ac_pars,AE_max):
         CL = AE_max["1"]*2*CD0
         V_range = np.sqrt(2*W/(rho*S*CL))
     return V_endurance,V_range
-def rate_of_climb(ac_pars,Pa,Pr,AEmax,V):
+def rate_of_climb(ac_pars,Pa,Pr,V):
     """
     Doc
     """
-    rho_array = rho_h()
+    rho_array = rho_h(len(V))
     RoC_array = []
     RoC_array_max = []
     for iterable in rho_array:
         q_inf = q(V,iterable)
-        AE,AE_max = aerodynamic_coeficients(ac_pars,q_inf)
+        AE,_ = aerodynamic_coeficients(ac_pars,q_inf)
         Tr = thrust_required(ac_pars,AE)
         Pr,Pa = power(ac_pars,Tr,V,iterable)
         RoC = (Pa-Pr)/ac_pars["W"]["value"]
@@ -98,7 +99,9 @@ def rate_of_climb(ac_pars,Pa,Pr,AEmax,V):
         RoC_array_max.append(roc_max)
         RoC_array.append(RoC)
     RoC_array_max = np.asarray(RoC_array_max,dtype=float)
-    return np.asarray(RoC_array[0]),max(RoC_array[0]),RoC_array_max
+    roc = np.asarray(RoC_array[0])
+    roc_max = max(roc)
+    return roc,roc_max,RoC_array_max
 def climb_time(ac_pars,roc,h):
     if ac_pars["type"].casefold() == "jett":
         obj_roc = 500
@@ -107,9 +110,10 @@ def climb_time(ac_pars,roc,h):
     h = h*3.2
     roc = roc*60
     idx = np.argmin(np.abs(roc-obj_roc))
-    h2 = h[idx]
-    h = h[:idx]
-    roc = roc[:idx]
+    h = h[:idx+1]
     roc_inv = 1/(roc)
-    t = np.trapz(roc_inv, h)
+    roc_inv = roc_inv[:idx+1]
+    t = simpson(roc_inv, h)
     return roc_inv,h,t,idx
+
+#%%
