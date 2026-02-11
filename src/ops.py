@@ -118,14 +118,15 @@ def rate_of_climb(ac_pars,Pa0,Pr0,V):
     roc_array_max = [x for x in roc_array_max if x >= 0]
     roc_array_max=np.asarray(roc_array_max,dtype=float)
     h = h[:len(roc_array_max)]
-    celling = 500 if ac_pars["type"].casefold() == "jett" else  100
+    celling = 500 if ac_pars["type"].casefold() == "jett" else  100 
     roc_array_max = roc_array_max*60
-    idx = np.argmin(abs(roc_array_max-celling))
+    idx = np.argmin(abs(roc_array_max-celling)) ## idx pos when roc = cellling
     return roc0,roc0_max,roc_array_max,idx,h
 def climb_time(idx,roc_max,h):
     h_ft = h*3.20884
     roc_inv = 1/(roc_max)
-    t = simpson(roc_inv[:idx+1], h_ft[:idx+1])
+    h_
+    t = simpson(roc_inv[idx+1:], h_ft[idx+1:)
     return roc_inv,h,t
 def endurance_range(ac,AE_max):
     S = ac["S"]["value"]
