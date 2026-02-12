@@ -44,10 +44,10 @@ def rate_of_climb_plot(ax,RoC,RoC_max_value,V):
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
 def roc_height_plot(ax,roc,h):
-    roc = roc*60e-3
-    h = h*3.208e-3
+    roc = roc*1e-3
+    h = h*1e-3
     ax.plot(roc,h)
-    ax.set_xlabel(r"$\frac{R}{C}{max}, ft/min \cdot 10^3$")
+    ax.set_xlabel(r"$\frac{R}{C}_{max}, ft/min \cdot 10^3$")
     ax.set_ylabel(r"$Height, ft \cdot 10^3$")
     ax.legend()
     ax.grid(True)
@@ -65,7 +65,7 @@ def plot_ac_performance(CJ1,points):
     AE,AE_max = f.aerodynamic_coeficients(CJ1,q_inf)
     Tr = f.thrust_required(CJ1,AE)
     Pr,Pa = f.power(CJ1,Tr,V)
-    RoC,RoC_max_val,RoC_max_values,idx,h = f.rate_of_climb(CJ1,Pa,Pr,V)
+    RoC,RoC_max_val,RoC_max_values,h,h_celling = f.rate_of_climb(CJ1,Pa,Pr,V)
     # Figure 1
     fig, ax = plt.subplots(3,1)
     thrust_required_plot(ax[0],V,Tr,CJ1,AE_max)
@@ -87,8 +87,8 @@ def plot_ac_performance(CJ1,points):
     plt.show(block = False)
     # Figure 4
     fig, ax = plt.subplots(1)
-    roc_inv,h,time = f.climb_time(idx,RoC_max_values,h)
-    climb_time_plot(ax,roc_inv,h,time)
+    roc_inv,h = f.climb_time(RoC_max_values,h,h_celling)
+    # climb_time_plot(ax,roc_inv,h)
     # Endurance and range
     E,R = f.endurance_range(CJ1,AE_max)
 
@@ -121,4 +121,3 @@ CP1 = {"type":"propeller",
     }
 plot_ac_performance(CJ1,5000)
 plot_ac_performance(CP1,5000)
-5

@@ -22,7 +22,7 @@ def rho_h(points):
             rho1 = rho0*(t1/t0)**-(g/(a*R)+1)
             rho = rho1*np.exp(-(g/(R*t1))*(iterable-h1))
         rho_array[idx] = rho
-    return rho_array*0.001941,h
+    return rho_array*0.001941,h*3
 def aerodynamic_coeficients(ac_pars,q):
     AE,AE_max = {},{}
     CD0 = ac_pars["CD0"]
@@ -115,18 +115,22 @@ def rate_of_climb(ac_pars,Pa0,Pr0,V):
         roc_var = (Pa_var-Pr_var)/ac_pars["W"]["value"]
         roc_var_max = np.max(roc_var)
         roc_array_max.append(roc_var_max)
-    roc_array_max = [x for x in roc_array_max if x >= 0]
+    
     roc_array_max=np.asarray(roc_array_max,dtype=float)
+    auxVar = abs(roc_array_max)
+    idx = np.argmin(auxVar)
+    roc_array_max = roc_array_max[:idx+1]
+    roc_array_max[-1] = 1e-15
     h = h[:len(roc_array_max)]
     celling = 500 if ac_pars["type"].casefold() == "jett" else  100
     roc_array_max = roc_array_max*60
-    idx = np.argmin(abs(roc_array_max-celling))
-    return roc0,roc0_max,roc_array_max,idx,h
-def climb_time(idx,roc_max,h):
-    h_ft = h*3.20884
+    h_celling = np.interp(celling,h,roc_array_max)
+    return roc0,roc0_max,roc_array_max,h,h_celling
+def climb_time(roc_max,h,h_celling):
+    
     roc_inv = 1/(roc_max)
-    t = simpson(roc_inv[:idx+1], h_ft[:idx+1])
-    return roc_inv,h,t
+
+    return roc_inv,h
 def endurance_range(ac,AE_max):
     S = ac["S"]["value"]
     W = ac["W"]['value']
