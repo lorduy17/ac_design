@@ -22,7 +22,7 @@ def rho_h(points):
             rho1 = rho0*(t1/t0)**-(g/(a*R)+1)
             rho = rho1*np.exp(-(g/(R*t1))*(iterable-h1))
         rho_array[idx] = rho
-    return rho_array*0.001941,h*3
+    return rho_array*0.001941,h*3.28084
 def aerodynamic_coeficients(ac_pars,q):
     AE,AE_max = {},{}
     CD0 = ac_pars["CD0"]
@@ -68,15 +68,15 @@ def power(ac_pars,Tr,V,rho=None):
         if ac_pars["type"].casefold() == "propeller":
             if rho is not None:
                 rho_ratio = rho/ac_pars["rho"]["value"]
-                Pa = np.ones_like(V)*ac_pars["eta_p"]*ac_pars["power_available"]["value"]*rho_ratio # Pa in lb*ft/s
+                Pa = np.ones_like(V)*ac_pars["power_available"]["value"]*rho_ratio # Pa in lb*ft/s
             else:
                 Pa = np.ones_like(V)*ac_pars["eta_p"]*ac_pars["power_available"]["value"]
     else: ## jett
         if rho is not None:
             rho_ratio = rho/ac_pars["rho"]["value"]
-            Ta = ac_pars["thrust_max"]["value"]*rho_ratio
+            Ta = ac_pars["thrust_max"]["value"]*(rho_ratio)
         else:
-             Ta = ac_pars["thrust_max"]["value"]
+             Ta = ac_pars["thrust_max"]["value"] 
         Pa = Ta*V
     return Pr,Pa
 def operation_speeds(ac_pars,AE_max):
@@ -99,11 +99,11 @@ def operation_speeds(ac_pars,AE_max):
         CL = AE_max["1"]*2*CD0
         V_range = np.sqrt(2*W/(rho*S*CL))
     return V_endurance,V_range
-def rate_of_climb(ac_pars,Pa0,Pr0,V):
+def rate_of_climb(ac_pars,Pa0,Pr0,V,points):
     """
     Doc
     """
-    rho_array,h = rho_h(len(V))
+    rho_array, h = rho_h(points) 
     roc_array_max = []
     roc0 = (Pa0-Pr0)/ac_pars["W"]["value"]
     roc0_max = max(roc0)
@@ -120,18 +120,18 @@ def rate_of_climb(ac_pars,Pa0,Pr0,V):
     auxVar = abs(roc_array_max)
     idx = np.argmin(auxVar)
     roc_array_max = roc_array_max[:idx+1]
-    roc_array_max[-1] = 1e-15
+    
     h = h[:len(roc_array_max)]
     celling = 500 if ac_pars["type"].casefold() == "jett" else  100 
     roc_array_max = roc_array_max*60
-    auxVar = abs(roc_array_max-celling)
-    idx = np.argmin(auxVar)
-    h_celling = h[idx]
-    return roc0,roc0_max,roc_array_max,h,h_celling
-def climb_time(roc_max,h):
-    roc_inv = 1/(roc_max)
-    h
-    return roc_inv,h
+    return roc0,roc0_max,roc_array_max,h,celling
+def climb_time(roc_max,h,celling):
+    valid = roc_max > celling
+    roc_valid = roc_max[valid]
+    h_valid = h[valid]
+    roc_inv = 1/(roc_valid)
+    time = simpson(roc_inv,h_valid)
+    return roc_inv,h_valid,time
 def endurance_range(ac,AE_max):
     S = ac["S"]["value"]
     W = ac["W"]['value']

@@ -65,7 +65,7 @@ def plot_ac_performance(CJ1,points):
     AE,AE_max = f.aerodynamic_coeficients(CJ1,q_inf)
     Tr = f.thrust_required(CJ1,AE)
     Pr,Pa = f.power(CJ1,Tr,V)
-    RoC,RoC_max_val,RoC_max_values,h,h_celling = f.rate_of_climb(CJ1,Pa,Pr,V)
+    RoC,RoC_max_val,RoC_max_values,h,celling = f.rate_of_climb(CJ1,Pa,Pr,V,points)
     # Figure 1
     fig, ax = plt.subplots(3,1)
     thrust_required_plot(ax[0],V,Tr,CJ1,AE_max)
@@ -87,11 +87,10 @@ def plot_ac_performance(CJ1,points):
     plt.show(block = False)
     # Figure 4
     fig, ax = plt.subplots(1)
-    roc_inv,h = f.climb_time(RoC_max_values,h,h_celling)
-    # climb_time_plot(ax,roc_inv,h)
+    roc_inv,h,time = f.climb_time(RoC_max_values,h,celling)
+    climb_time_plot(ax,roc_inv,h,time)
     # Endurance and range
     E,R = f.endurance_range(CJ1,AE_max)
-
     plt.show()
 CJ1 = {"type":"jett",
     "v_range":{"value":[100,1000],"unit":"ft/s"},
@@ -119,5 +118,5 @@ CP1 = {"type":"propeller",
     "eta_p": 0.8,
     "SFC":0.45
     }
-plot_ac_performance(CJ1,5000)
-plot_ac_performance(CP1,5000)
+plot_ac_performance(CJ1,1000)
+plot_ac_performance(CP1,1000)
