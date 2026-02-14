@@ -62,23 +62,25 @@ def power(ac_pars,Tr,V,rho=None):
     """
     Docstring for power_required
     rho = array
+    calca escalarmente si hay ro
     """
-    Pr = Tr*V
-    if "power_available" in ac_pars:
-        if ac_pars["type"].casefold() == "propeller":
-            if rho is not None:
-                rho_ratio = rho/ac_pars["rho"]["value"]
-                Pa = np.ones_like(V)*ac_pars["power_available"]["value"]*rho_ratio # Pa in lb*ft/s
-            else:
-                Pa = np.ones_like(V)*ac_pars["eta_p"]*ac_pars["power_available"]["value"]
-    else: ## jett
-        if rho is not None:
-            rho_ratio = rho/ac_pars["rho"]["value"]
-            Ta = ac_pars["thrust_max"]["value"]*(rho_ratio)
+    if rho is not None: # Return vector Power = f(h)
+        rho_ratio = rho/ac_pars["rho"]['value']
+        Pr = Tr*V*rho_ratio
+        if ac_pars['type'] == 'jett':
+            Ta = ac_pars['thrust_max']*V*rho_ratio
+            Pa = Ta*V
+            return Pr,Pa,Ta
         else:
-             Ta = ac_pars["thrust_max"]["value"] 
-        Pa = Ta*V
-    return Pr,Pa
+            Pa = ac_pars['power_available']['value']*ac_pars['eta_p']*np.ones_like(V)*rho_ratio
+        return Pr,Pa,None
+    else: ## Return vector at sea level
+        Pr = Tr*V
+        if ac_pars['type'] == 'jett':
+            Pa =  ac_pars['thrust_max']['value']*V
+        else:
+            Pa = ac_pars['power_available']["value"]*ac_pars['eta_p']*np.ones_like(V)
+    return Pr,Pa,None
 def operation_speeds(ac_pars,AE_max):
     CD0 = ac_pars["CD0"]
     rho = ac_pars["rho"]["value"]
@@ -101,37 +103,52 @@ def operation_speeds(ac_pars,AE_max):
     return V_endurance,V_range
 def rate_of_climb(ac_pars,Pa0,Pr0,V,points):
     """
-    Doc
+    Output:
+    Rate of climb at sea level = array, ft/s
+    Maximun rate of climb at sea level = float, ft/s
+    Maximun rate of climb in f(h) = array, ft/min
     """
     rho_array, h = rho_h(points) 
     roc_array_max = []
-    roc0 = (Pa0-Pr0)/ac_pars["W"]["value"]
-    roc0_max = max(roc0)
-    for iterable in rho_array:
-        q_var = q(V,iterable)
-        AE_var,_=aerodynamic_coeficients(ac_pars,q_var)
-        Tr_var = thrust_required(ac_pars,AE_var)
-        Pr_var,Pa_var = power(ac_pars,Tr_var,V,iterable)
-        roc_var = (Pa_var-Pr_var)/ac_pars["W"]["value"]
-        roc_var_max = np.max(roc_var)
-        roc_array_max.append(roc_var_max)
-    
-    roc_array_max=np.asarray(roc_array_max,dtype=float)
-    auxVar = abs(roc_array_max)
-    idx = np.argmin(auxVar)
-    roc_array_max = roc_array_max[:idx+1]
-    
-    h = h[:len(roc_array_max)]
-    celling = 500 if ac_pars["type"].casefold() == "jett" else  100 
+    W = ac_pars["W"]["value"]
+    S = ac_pars["S"]["value"]
+    CD0 = ac_pars["CD0"]
+    # rate of climb at sea level
+    roc_sl = (Pa0-Pr0)/W
+    roc_sl_max = np.max(roc_sl)
+    # roc_max vector calc
+    if ac_pars["type"].casefold() == "jett": 
+        for iterable in rho_array:
+            rho_ratio = iterable/ac_pars["rho"]['value']
+            q_var = q(V,iterable)
+            _,AE_max=aerodynamic_coeficients(ac_pars,q_var)
+            Ta = ac_pars['thrust_max']['value']*rho_ratio
+            z = 1+np.sqrt(1+3/(AE_max["1"]**2*((Ta)/W)**2))
+            roc_max = np.sqrt(W*z/(3*iterable*CD0*S))*(Ta/W)**(3/2)*(1-z/6-3/(2*np.square(Ta/W)*np.square(AE_max["1"])*z))
+            roc_array_max.append(roc_max)
+    else:
+        for iterable in rho_array:
+            rho_ratio = iterable/ac_pars["rho"]['value']
+            q_var = q(V,iterable)
+            AE,_=aerodynamic_coeficients(ac_pars,q_var)
+            Tr = thrust_required(ac_pars,AE)
+            Pr,Pa,_ = power(ac_pars,Tr,V,iterable)
+            roc = (Pa-Pr)/W
+            roc_array_max.append(np.max(roc))
+    roc_array_max = np.asarray(roc_array_max,dtype=float)
     roc_array_max = roc_array_max*60
-    return roc0,roc0_max,roc_array_max,h,celling
-def climb_time(roc_max,h,celling):
-    valid = roc_max > celling
-    roc_valid = roc_max[valid]
-    h_valid = h[valid]
-    roc_inv = 1/(roc_valid)
-    time = simpson(roc_inv,h_valid)
-    return roc_inv,h_valid,time
+    idx = np.argmin(abs(roc_array_max))
+    roc_array_max = roc_array_max[:idx+1]
+    h = h[:idx+1]
+    return roc_sl,roc_sl_max,roc_array_max,h
+def climb_time(roc_max,h):
+    roc_inv = 1/(roc_max)
+    h = h
+    time_trapz = np.trapezoid(roc_inv, h)
+    time_simpson = simpson(roc_inv, h)
+    print(f"Trapezoid: {time_trapz:.4f} min")
+    print(f"Simpson: {time_simpson:.4f} min")
+    print(f"Diferencia: {abs(time_trapz-time_simpson):.4f} min")
 def endurance_range(ac,AE_max):
     S = ac["S"]["value"]
     W = ac["W"]['value']
