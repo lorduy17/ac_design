@@ -51,12 +51,13 @@ def aerodynamic_coeficients(ac_pars,q):
         }
         return AE,AE_max
     return None,AE_max
-def q (V,rho):
+def q (V,rho=None):
     """
     Docstring for q
     :param V: Description
     :param rho: Description
     """
+    rho = rho_h() if rho is None else rho
     return 0.5 * rho * V**2
 def thrust_required(ac_pars,AE):
     """
@@ -79,11 +80,11 @@ def power(ac_pars,Tr,V,rho=None):
     else:
         Pa = ac_pars['power_available']['value']*ac_pars['eta_p']*rho_ratio*np.ones_like(V)
     return Pr,Pa,None
-def operation_speeds(ac_pars,AE_max):
+def operation_speeds(ac_pars,AE_max,rho=None):
     CD0 = ac_pars["CD0"]
-    rho = ac_pars["rho"]["value"]
     S = ac_pars["S"]["value"]
     W = ac_pars["W"]["value"]
+    rho = ac_pars['rho']['value'] if 'rho' in ac_pars else rho_h()
     if ac_pars["type"].casefold() == "jett":
         # V_end occurs when L/D its max -> c
         CL = AE_max["1"]*2*CD0
@@ -99,7 +100,7 @@ def operation_speeds(ac_pars,AE_max):
         CL = AE_max["1"]*2*CD0
         V_range = np.sqrt(2*W/(rho*S*CL))
     return V_endurance,V_range
-def rate_of_climb(ac_pars,V,points):
+def rate_of_climb(ac_pars,V,points,rho=None):
     """
     Output:
     Rate of climb at sea level = array, ft/s
@@ -112,7 +113,7 @@ def rate_of_climb(ac_pars,V,points):
     S = ac_pars["S"]["value"]
     CD0 = ac_pars["CD0"]
     _,AE_max=aerodynamic_coeficients(ac_pars,q=None)
-    # rate of climb at sea level
+    # rate of climb at user rho if None sea level
     rho0 = rho_h(None)
     q0 = q(V,rho0)
     AE,_=aerodynamic_coeficients(ac_pars,q0)
@@ -122,7 +123,7 @@ def rate_of_climb(ac_pars,V,points):
     roc_sl_max = np.max(roc_sl)
     # roc_max vector calc
     rho_array, h = rho_h(points)
-    if ac_pars["type"].casefold() == "jett": 
+    if ac_pars["type"].casefold() == "jett":
         for iterable in rho_array:
             rho_ratio = iterable/rho0
             q_var = q(V,iterable)
@@ -146,6 +147,12 @@ def rate_of_climb(ac_pars,V,points):
     roc_array_max = roc_array_max*60
     f_ = interp1d(h,roc_array_max)
     h_celling = root_scalar(lambda x: f_(x)-100,bracket=[0, max(h)]).root
+    if rho is not None: # For specific altitude
+        rho_ratio = rho/rho0
+        Pr_,Pa_ = Pr0*rho_ratio,Pa0*rho_ratio
+        roc_ = (Pa_-Pr_)/W
+        roc_max_ = np.max(roc_)
+        return roc_,roc_max_
     return roc_sl,roc_sl_max,roc_array_max,h,h_celling
 def climb_time(roc_max,h):
     h2 = (h >= 0) & (h <= 20e3)
@@ -159,7 +166,7 @@ def endurance_range(ac,AE_max):
     S = ac["S"]["value"]
     W = ac["W"]['value']
     Wf = ac["Wf"]["value"]
-    rho = ac["rho"]["value"]
+    rho = rho_h() if 'rho' not in ac else ac['rho']['value']
     if ac["type"].casefold() == "propeller":
        eta_p = ac['eta_p']
        c = ac['SFC']*(1/(550*3600))
@@ -172,3 +179,4 @@ def endurance_range(ac,AE_max):
     print(f'Endurance: {E/3600} hours')
     print(f'Range: {R/5280} ft')
     return E,R
+    
