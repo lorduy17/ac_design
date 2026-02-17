@@ -35,12 +35,12 @@ def aerodynamic_ef_plot(ax,V,AE,AEmax,ac_pars):
     ax.set_ylabel(r"$\frac{C_L}{C_D}$")
     ax.grid()
     ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-def rate_of_climb_plot(ax,RoC,RoC_max_value,V,rho=0.002277):
+def rate_of_climb_plot(ax,RoC,RoC_max_value,V,h='0'):
     ax.plot(V,RoC,color="mediumorchid",label=r"$R_C$")
     ax.axhline(y = RoC_max_value,linestyle="--",color="black",label=rf"$\frac{{R}}{{C}} = {RoC_max_value:.2f} \frac{{ft}}{{s}}$")
     ax.set_xlabel(r"$V_{\infty}, ft/s$")
     ax.set_ylabel(r"$\frac{R}{C}, ft/s$")
-    ax.text(1.05,0, rf'$R/C @ \rho = {rho:.4f} slug/ft^{{3}}$', 
+    ax.text(1.05,0, rf'$R/C_{{@Height = {h:.0f}\ \mathrm{{ft}}}}$', 
             transform=ax.transAxes, verticalalignment='bottom')
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
@@ -62,11 +62,12 @@ def climb_time_plot(ax,roc,h,time):
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
 def plot_ac_performance(CJ1,points):
+    h = CJ1['h']
     V = np.linspace(CJ1["v_range"]["value"][0],CJ1["v_range"]["value"][1],points)
-    q_inf = f.q(V,None)
+    q_inf = f.q(V,h)
     AE,AE_max = f.aerodynamic_coeficients(CJ1,q_inf)
     Tr = f.thrust_required(CJ1,AE)
-    Pr,Pa,_ = f.power(CJ1,Tr,V)
+    Pr,Pa,_ = f.power(CJ1,Tr,V,h)
     RoC,RoC_max_val,RoC_max_values,h,h_celling = f.rate_of_climb(CJ1,V,points)
     
     # Figure 1
@@ -84,7 +85,7 @@ def plot_ac_performance(CJ1,points):
     if 'rho' in CJ1:
         rho = CJ1['rho']['value']
         roc_at_rho,roc_max_at_rho = f.rate_of_climb(CJ1,V,points,rho)
-        rate_of_climb_plot(ax[1],roc_at_rho,roc_max_at_rho,V,rho)
+        rate_of_climb_plot(ax[1],roc_at_rho,roc_max_at_rho,V,h)
     plt.tight_layout()
     plt.show(block=False)
     # Figure 3
@@ -100,19 +101,18 @@ def plot_ac_performance(CJ1,points):
     # Endurance and range
     E,R = f.endurance_range(CJ1,AE_max)
     plt.show()
-CJ1 = {"type":"propeller",
-    "v_range":{"value":[100,1000],"unit":"ft/s"},
+CJ1 = {"type":"jett",
+    "v_range":{"value":[100 ,1000],"unit":"ft/s"},
     'rho':{'value':0.00170099},
-    "S": {"value":181,"unit":"ft^2"},  
-    "W": {"value":3000,"unit":"lbf"},
+    "S": {"value":47*10.763867,"unit":"ft^2"},  
+    "W": {"value":103047*0.2248,"unit":"lbf"},
     "Wf": {"value":19815-1119*6.67,'unit':'lbf'},
-    "CD0": 0.027,
+    "CD0": 0.032,
     "b": {"value":53.3,"unit":"ft"},
-    "e": 0.91,
-    'AR':{'value':6.2},
-    "power_available": {"value":345*550,"unit":"lbs"},
-    "eta_p":0.6,
-    "TSFC":0.6
+    "e": 0.87 ,
+    'AR':{'value':6.5},
+    "thrust_max": {"value":1*40289*0.2248,"unit":"lbs"},
+    'h':12e3/3.280840
 }
 
 plot_ac_performance(CJ1,1000)

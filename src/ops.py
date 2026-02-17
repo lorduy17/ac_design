@@ -4,17 +4,30 @@ from scipy.optimize import root_scalar
 from scipy.integrate import simpson
 #   1 GAL AVIAION = 5.64 LB
 #   1 GAL DE KEROSENO = 6.67 LB
-def rho_h(points=None):
-    h = np.linspace(0,18e3,points) if points is not None  else 1
+def rho_h(points=None,h=None):
     R = 287
     g = 9.80665
     t0 = 288.16 #K
     rho0 = 1.225 #kg/m3
-    p0 = 1.01325e5 #Pa
     a = -6.5e-3
     if points is None:
-        return rho0* 0.001941
+        if h is None or h == 0:
+            return rho0 * 0.001941
+        elif h > 11e3:
+            if h <=11e3:
+                t = t0+a*h
+                rho = rho0*(t/t0)**-(g/(a*R)+1)
+            else:
+                t = 11e3
+                h1 = 11e3
+                t1 = t0+a*h1
+                rho1 = rho0*(t1/t0)**-(g/(a*R)+1)
+                rho = rho1*np.exp(-(g/(R*t1))*(h-h1))
+            return rho*0.001941 # at h
+        else: # Return sea level
+            return rho0*0.001941
     else:
+        h = np.linspace(0,18e3,points)
         rho_array = np.zeros(len(h))
         for idx,iterable in enumerate(h):
             if iterable <= 11e3:
@@ -51,27 +64,31 @@ def aerodynamic_coeficients(ac_pars,q):
         }
         return AE,AE_max
     return None,AE_max
-def q (V,rho=None):
+def q (V,rho,h=None):
     """
     Docstring for q
     :param V: Description
     :param rho: Description
     """
-    rho = rho_h() if rho is None else rho
+    if rho is None:
+        if h is None:
+            rho = rho_h(h=0)
+        else:
+            rho = rho_h(h=h)
     return 0.5 * rho * V**2
 def thrust_required(ac_pars,AE):
     """
     Docstring for thrust_required
     """
     return ac_pars["W"]["value"]/AE["1"]
-def power(ac_pars,Tr,V,rho=None):
+def power(ac_pars,Tr,V,rho=None,h=None):
     """
     Docstring for power_required
-    rho = array
     calca escalarmente si hay ro
     """
-    rho0 = rho_h(None)
-    rho_ratio = 1 if rho is None else rho/rho0
+    rho0 = rho_h()
+    rho = rho if rho is not None and h is None else rho_h(h)
+    rho_ratio = rho/rho0
     Pr = Tr*V
     if ac_pars['type'] == 'jett':
         Ta = ac_pars['thrust_max']['value']*rho_ratio
