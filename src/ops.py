@@ -102,6 +102,11 @@ def operation_speeds(ac_pars,AE_max,rho=None):
     S = ac_pars["S"]["value"]
     W = ac_pars["W"]["value"]
     rho = ac_pars['rho']['value'] if 'rho' in ac_pars else rho_h()
+    if "AR" in ac_pars:
+        AR = ac_pars["AR"]["value"]
+    else:
+        AR = ac_pars["b"]["value"]**2 / S
+    k = 1/(np.pi * AR * ac_pars["e"])
     if ac_pars["type"].casefold() == "jett":
         # V_end occurs when L/D its max -> c
         CL = AE_max["1"]*2*CD0
@@ -111,11 +116,11 @@ def operation_speeds(ac_pars,AE_max,rho=None):
         V_range = np.sqrt(2*W/(rho*S*CL))
     else: # propeller
         # V_end occurs when L**(3/2)/D its max -> c
-        CL = AE_max["3/2"]*4*CD0
-        V_endurance = np.sqrt(2*W/(rho*S*CL))
+        CL_end = np.sqrt(3*CD0/k)
         # V_ra occurs whue L/D its max
-        CL = AE_max["1"]*2*CD0
-        V_range = np.sqrt(2*W/(rho*S*CL))
+        CL_range = np.sqrt(CD0/k)
+    V_endurance = np.sqrt(2*W/(rho*S*CL))
+    V_range = np.sqrt(2*W/(rho*S*CL))
     return V_endurance,V_range
 def rate_of_climb(ac_pars,V,points,rho=None):
     """
@@ -187,13 +192,65 @@ def endurance_range(ac,AE_max):
     if ac["type"].casefold() == "propeller":
        eta_p = ac['eta_p']
        c = ac['SFC']*(1/(550*3600))
-       E = (eta_p/c)*AE_max['3/2']*np.sqrt(2*rho*S)*(Wf**(-1/2)-W**(-1/2))
+       E = (eta_p / c) * AE_max['3/2'] * np.sqrt(2 * rho * S) * (W**(-1/2) - W**(-1/2))
        R = eta_p/c*AE_max['1']*np.log(W/Wf)
     else:
-       c = ac['TSFC']/3600
-       E = AE_max['1']/c*np.log(W/Wf)
-       R = 2*np.sqrt(2/(rho*S))*AE_max['1/2']*(1/c)*(W**(1/2)-Wf**(1/2))
+        c = ac['TSFC']
+        E = AE_max['1']*np.log(W/Wf)/c
+        R = (
+            2*
+            np.sqrt(2/(rho*S))*
+            AE_max['1/2']*
+            (np.sqrt(W)-np.sqrt(Wf))
+        )
     print(f'Endurance: {E/3600} hours')
     print(f'Range: {R/5280} ft')
     return E,R
-    
+def distance_liftoff(ac,ur,T):
+    # ac_pars
+    W = ac['W']['value']
+    S = ac['S']['value']
+    cl_max = ac['cl_max']
+    cd0 = ac['cd0']
+    h = ac['h']['value'] if 'h' in ac else None
+    b = ac['b']['value']
+    AR = ac['AR'] if 'AR' in ac else b**2/S
+    k = 1/(np.pi*AR*ac['e'])
+    rho = rho_h(h)
+    cl = W/(q*S)
+    #
+    v_lo = 1.2*np.sqrt(2*W/(rho))
+    q = q(v_lo,rho)
+    cdi = k*cl**2
+    cd = cdi+cd0
+    drag = cd*q*S
+    lift = cl*q*S
+    av_term = drag+ur*(W-lift)
+    g = 32.22
+
+    s_lo = 1.44*W**2/(g*rho*S*cl_max*(T-av_term))
+    return s_lo #ft
+def distance_landing(ac,ur):
+    # ac_pars
+    W = ac['W']['value']
+    S = ac['S']['value']
+    cl_max = ac['cl_max']
+    cd0 = ac['cd0']
+    h = ac['h']['value'] if 'h' in ac else None
+    b = ac['b']['value']
+    AR = ac['AR'] if 'AR' in ac else b**2/S
+    k = 1/(np.pi*AR*ac['e'])
+    rho = rho_h(h)
+    cl = W/(q*S)
+    #
+    v_t = 1.3*np.sqrt(2*W/(rho))
+    q = q(v_t,rho)
+    cdi = k*cl**2
+    cd = cdi+cd0
+    drag = cd*q*S
+    lift = cl*q*S
+    av_term = drag+ur*(W-lift)
+    g = 32.22
+
+    s_l = 1.69*W**2/(g*rho*S*cl_max*(av_term))
+    return s_l ### ft

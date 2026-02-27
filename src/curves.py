@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import ops as f
 def power_required_plot(ax,V,Pr,Pa,ac_pars,AEmax):
     W = ac_pars["W"]["value"]
-    vr,ve = f.operation_speeds(ac_pars,AEmax)
+    vr,ve = f.operation_speeds(ac_pars,AEmax,)
     ax.plot(V,Pr/550,color="mediumorchid",label=r"$P_{required}$")
     ax.plot(V,Pa/550,color="red",label=r"$P_{available}$")
     if ac_pars["type"].casefold() == "propeller":
@@ -28,7 +28,7 @@ def aerodynamic_ef_plot(ax,V,AE,AEmax,ac_pars):
     ax.plot(V,AE["1"],label=r"$\frac{C_L}{C_D}$")
     ax.plot(V,AE["1/2"],label = r"$\frac{\sqrt{C_L}}{C_D}$")
     ax.plot(V,AE["3/2"],label=r"$\frac{\sqrt{C_L^3}}{C_D}$")
-    vr,ve = f.operation_speeds(ac_pars,AEmax)
+    vr,ve = f.operation_speeds(ac_pars,AEmax,ac_pars['rho']['value'])
     ax.axvline(x=vr, linestyle ="-.",color="black")
     ax.axvline(x=ve, linestyle ="--")
     ax.set_xlabel(r"$V_{\infty}, \frac{ft}{s}$")
@@ -40,8 +40,8 @@ def rate_of_climb_plot(ax,RoC,RoC_max_value,V,h='0'):
     ax.axhline(y = RoC_max_value,linestyle="--",color="black",label=rf"$\frac{{R}}{{C}} = {RoC_max_value:.2f} \frac{{ft}}{{s}}$")
     ax.set_xlabel(r"$V_{\infty}, ft/s$")
     ax.set_ylabel(r"$\frac{R}{C}, ft/s$")
-    ax.text(1.05,0, rf'$R/C_{{@Height = {h:.0f}\ \mathrm{{ft}}}}$', 
-            transform=ax.transAxes, verticalalignment='bottom')
+    # # ax.text(1.05,0, rf'$R/C_{{@Height = {h:.0f}\ \mathrm{{ft}}}}$', 
+    #         transform=ax.transAxes, verticalalignment='bottom')
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
 def roc_height_plot(ax,roc,h,h_celling):
@@ -62,12 +62,12 @@ def climb_time_plot(ax,roc,h,time):
     ax.legend(bbox_to_anchor=(1.05, 1),loc='upper left')
     ax.grid(True)
 def plot_ac_performance(CJ1,points):
-    h = CJ1['h']
+    h = None
     V = np.linspace(CJ1["v_range"]["value"][0],CJ1["v_range"]["value"][1],points)
     q_inf = f.q(V,h)
     AE,AE_max = f.aerodynamic_coeficients(CJ1,q_inf)
     Tr = f.thrust_required(CJ1,AE)
-    Pr,Pa,_ = f.power(CJ1,Tr,V,h)
+    Pr,Pa,_ = f.power(CJ1,Tr,V)
     RoC,RoC_max_val,RoC_max_values,h,h_celling = f.rate_of_climb(CJ1,V,points)
     
     # Figure 1
@@ -101,18 +101,18 @@ def plot_ac_performance(CJ1,points):
     # Endurance and range
     E,R = f.endurance_range(CJ1,AE_max)
     plt.show()
-CJ1 = {"type":"jett",
-    "v_range":{"value":[100 ,1000],"unit":"ft/s"},
-    'rho':{'value':0.00170099},
-    "S": {"value":47*10.763867,"unit":"ft^2"},  
-    "W": {"value":103047*0.2248,"unit":"lbf"},
+CJ1 = {"type":"propeller",
+    "v_range":{"value":[100,350],"unit":"ft/s"},
+    'rho':{'value':0.002377},
+    "S": {"value":53.8,"unit":"ft^2"},  
+    "W": {"value":2950,"unit":"lbf"},
     "Wf": {"value":19815-1119*6.67,'unit':'lbf'},
-    "CD0": 0.032,
-    "b": {"value":53.3,"unit":"ft"},
-    "e": 0.87 ,
-    'AR':{'value':6.5},
-    "thrust_max": {"value":1*40289*0.2248,"unit":"lbs"},
-    'h':12e3/3.280840
+    "CD0": 0.025,
+    "b": {"value":35.8,"unit":"ft"},
+    "e": 0.8,
+    "power_available": {"value":230*550,"unit":"lbs"},
+    'SFC':0.45,
+    'eta_p':0.8
 }
 
 plot_ac_performance(CJ1,1000)

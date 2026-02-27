@@ -1,0 +1,21 @@
+The process of weight estimation is iterative
+
+Start with We_allowed since a data base of A/C references.
+E.x, take MTOW and We of A/C's similar of A/C designs.
+DATA BASE for comercial aircraft's:
+    https://github.com/tudelft-cns-atm/openap
+
+
+For calc fuel fraction.
+    Use table for:
+        Engine Start
+        Taxi
+        Take off
+        Climb
+        Descent
+        Landing, taxi, shutdown
+    Use breguet Eq for:
+        Cruise
+        Loiter, holding pattern (waiting times)
+
+Fuel weight = Fuel weight used + Fuel weight reserve
