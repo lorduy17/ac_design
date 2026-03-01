@@ -1,21 +1,25 @@
 import numpy as np
-def coefficients(W_empty,W_gross):
+def coefficients(W_empty:np.ndarray,W_gross:np.ndarray) -> tuple:
     """
-    Determine equation of empty weight allowed since a data base of similar
-    A/C's related Gross Weight and empty weight. For a power law and regression
-    lineal. The equation is determined by the least square method.
+    Determine coefficients of power law for empty weight allowed related Gross Weight 
+    and empty weight.
+    
     Input:
-    W_empty: asarray(dimensions=(n,),dtype=float),
-        empty weight of similar A/C's in lb.
-    W_gross: asarray(dimensions=(n,),dtype=float),
-        gross weight of similar A/C's in lb.
+    -------
+    W_empty: asarray(dimensions=(n,),dtype=float) |
+        Values [ib]
+
+    W_gross: asarray(dimensions=(n,),dtype=float) |
+        Values [lb].
+
     Output:
-    A: float,
+    -------
+    A: float |
         coefficient of the power law.
-    B: float,
+
+    B: float |
         exponent of the power law.
     """
-    # y = Ax^b
     y = W_empty
     x = W_gross
     if len(x) != len(y):
