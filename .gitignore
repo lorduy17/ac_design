@@ -13,5 +13,7 @@ __pycache__/
 Thumbs.db
 
 # support coding
-support_coding/
+support_code/
 
+# References
+References/
