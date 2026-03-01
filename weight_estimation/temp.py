@@ -1,7 +1,7 @@
 import numpy as np
 from data_base import coefficients
 
-def weight_fuel(mission,type_driven,weight_takeoff_guess,weight_changes=None,reserve_fraction=0.25):
+def fraction_fuel(mission,type_driven,weight_takeoff_guess,weight_changes=None):
     """
     aircraft_type: str,
         either 'jet' or 'propeller'
@@ -79,16 +79,34 @@ def weight_fuel(mission,type_driven,weight_takeoff_guess,weight_changes=None,res
                 initial_phase_weight = weight_takeoff_guess*m_ff_0
                 final_phase_weight = initial_phase_weight - weight_changes[str(phase_num)]
                 m_ff_0 *= final_phase_weight/initial_phase_weight
-    # Calculate fuel weight.
-    weight_fuel = weight_takeoff_guess*(1-m_ff_0)*(1+reserve_fraction) # Add 25% reserve fuel.
-    return weight_fuel
+    return m_ff_0
+def weight_empty_tentaive(weight_takeoff_guess,weight_payload,weight_crew,fuel_fractions):
+    """
+    Determine a tentative empty weight of the aircraft based on the fuel fractions 
+    and the payload and crew weight.
+    Input:
+    fuel_fractions: dict,
+        description
+        Format:
+            fuel_fractions = {
+                'used':float,
+                'liquids':float,
+                'reserve':float
+            }
+    weight_takeoff_guess: float,
+        in lb, the initial guess of the takeoff weight of the aircraft.
+    weight_payload: float,
+        in lb, the weight of the payload of the aircraft.
+    weight_crew: float,
+        in lb, the weight of the crew of the aircraft.
+    Output:
+    W_e_tentative: float,
+        in lb, the tentative empty weight of the aircraft.
+    """
+    D = weight_payload + weight_crew
+    C = fuel_fractions['used']*(1+fuel_fractions['reserve'])-fuel_fractions['liquids']-fuel_fractions['liquids']
+    W_e_tentative = C*weight_takeoff_guess - D
+    return W_e_tentative
 
 if __name__ == "__main__":
-    mission = {
-        'climb':0.97,
-        'cruise':0.85,
-        'descent':0.99
-    }
-    weight_takeoff_guess = 100000 # in lb
-    fuel_weight = weight_fuel(mission,'jet',weight_takeoff_guess)
-    print(f"Estimated fuel weight: {fuel_weight:.2f} lb")
+    None
