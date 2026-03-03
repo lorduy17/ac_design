@@ -33,3 +33,14 @@ Analize how is the change of the takeoff weight respect
  8. propeller ef
 
  For case like range and endurance is evaluated per mission phase
+
+for partials.
+    propeller.
+        range case no applies for:
+            V
+    jet.
+        range case no applies for:
+            np
+        endurance case no applies for:
+            np
+            V
