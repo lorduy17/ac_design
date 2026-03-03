@@ -159,9 +159,9 @@ def iterative_weight_estimation(w_takeoff:float,
     iteration = 0
     while error > tolerance: # Iterate until error is within tolerance or max iterations reached
         if diff > 0:
-            w_takeoff += -10
+            w_takeoff += -0.1
         else:
-            w_takeoff += 10 # Update takeoff weight guess
+            w_takeoff += 0.1 # Update takeoff weight guess
         m_ff = fuel_fraction_mission(mission,type_driven,weight_takeoff_guess=w_takeoff)
         C = m_ff*(1+m_ff_s['reserve'])-m_ff_s['liquids']-m_ff_s['reserve']
         w_e_tent = C*w_takeoff - D
@@ -173,7 +173,109 @@ def iterative_weight_estimation(w_takeoff:float,
         if error < tolerance:
             break
     return w_e_allowed,w_takeoff,w_tof
+def sensitivity_weights(A:float,B:float,C:float,D:float,
+              weight_takeoff:float):
+    """
+    Calculated
 
+    Inputs:
+    -------
+    A: float |
+        Coefficient from weight empty allowed eq. ['adim']
+
+    B: float |
+        Exponent from weight empty allowed eq. ['adim']
+
+    C: float |
+        Constat from fuel fractions. [adim]
+
+    D: float |
+        Constant from tentative eq. [lb]
+    
+    weight_takeoff: float |
+        Weight takeoff [lb].
+
+    Output:
+    -------
+    d_Wto: dict |
+        Key as derivate:
+        - W_pl: Weight payload
+        - W_e: Weight empty
+        Value float.
+    """
+    W_to = weight_takeoff # Abr to calcs
+    d_Wto_Wpl = B*W_to/(D-C*(1-B)*W_to)
+    d_Wto_We = B*W_to/(10**((np.log10(W_to)-A)/B))
+    d_Wto = {
+        'W_pl':d_Wto_Wpl,
+        'W_e':d_Wto_We,
+    }
+    return d_Wto
+def sensitivity_4phase(A:float,B:float,C:float,D:float,
+              weight_takeoff:float,parameter_mission_p:dict):
+    """
+    Describe fun
+
+    Inputs:
+    -------
+    A: float |
+        Coefficient from weight empty allowed eq. ['adim']
+
+    B: float |
+        Exponent from weight empty allowed eq. ['adim']
+
+    C: float |
+        Constat from fuel fractions. [adim]
+
+    D: float |
+        Constant from tentative eq. [lb]
+    
+    weight_takeoff: float |
+        Weight takeoff [lb].
+    """
+    ## para mff debe ser la fracción hasta esa fase en concreto? o mff total
+    w_to = weight_takeoff
+    mff = None
+    mff_r = None
+    F = -B*np.square(w_to)*(1+mff_r)*mff/(C*w_to*(1-B)-D)
+    # Take mission parameters.
+    try:
+        c = parameter_mission_p['c']
+        L_D = parameter_mission_p['L/D']
+        V = parameter_mission_p['V']
+        n = parameter_mission_p['n']
+        E = parameter_mission_p['E']
+        R = parameter_mission_p['R']
+    except ValueError as e:
+        raise
+    propeller_partials = {
+            'range':{
+                'R':c/(375*n*L_D),
+                'Cp':R/(375*n*L_D),
+                'eta_p':-R*c/(375*L_D*n**2),
+                'L/D':-R*c/(375*n*L_D**2)
+            },
+            'endurance':{
+                'E':V*c/(375*n*L_D),
+                'Cp':E*V*c/(375*n*L_D),
+                'eta_p':-E*V*c/(375*L_D*n**2),
+                'V':E*c/(374*n*L_D),
+                'L/D':-E*V*c/(375*n*L_D**2)
+            }
+    }
+    jet_partials = {
+        'range':{
+            'R':c/(V*L_D),
+            'Cj':R/(V*L_D),
+            'V':-R*c/(L_D*V**2),
+            'L/D':-R*c/(V*L_D**2)
+        },
+        'endurance':{
+            'E':c/(L_D),
+            'Cj':E/(L_D),
+            'L/D':-E*c/(L_D**2)
+        }
+    }
 
 if __name__ == "__main__":
     # E.X Propeller

@@ -19,3 +19,17 @@ For calc fuel fraction.
         Loiter, holding pattern (waiting times)
 
 Fuel weight = Fuel weight used + Fuel weight reserve
+
+
+For sensivity case.
+Analize how is the change of the takeoff weight respect
+ 1. Payload weight
+ 2. endurance
+ 3. range
+ 4. speed
+ 5. Empty weight
+ 6. fuel consumption
+ 7. Payload weight
+ 8. propeller ef
+
+ For case like range and endurance is evaluated per mission phase
