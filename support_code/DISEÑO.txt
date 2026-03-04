@@ -44,3 +44,33 @@ for partials.
         endurance case no applies for:
             np
             V
+
+
+    Despues de analisis de peso
+
+    empuje y potencia y area alar  --> aproximaciones.
+
+    Cosntrain diagram (matchingn chart)
+    -> roskman más completo
+    Pesos -> S -> max Climb
+
+    important vars.
+    T/W or Wto/HP vs W/S  
+    T/W: jet, comercial aprox 0.3
+    Wto/HP
+
+    T/W big:
+    - accelerated
+    - maniobras
+    - problem: high fuel consumption 
+
+    carga alar. comercia aprox 120
+        alta: low size wing
+        baja: big size wing
+        afecta:
+    * NORMALMENTE LO QUIERO MAXIMAR
+
+
+* Para determinar las lineas que me determina la zona de diseño,
+importante tener en cuenta lo que realmente me afecta la mision.
+

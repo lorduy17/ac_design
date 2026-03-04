@@ -39,36 +39,40 @@ def fuel_fraction_mission(mission:dict,
     -------
     m_ff_0: float | Total fuel fraction for the mission.
     """
+    # dict for store weights ratio if weight changes are given.
+    w_rs = {}
+    var_aux= []
     m_ff_0 = 1 # Initial fuel fraction
     # Calc fuel fraction for each phase.
     for phase_num,type_phase in enumerate(mission.keys(),start=1):
-        if type_phase.casefold() != 'cruise' and type_phase.casefold() != 'loiter':
+        if 'cruise' not in type_phase.casefold() and 'loiter' not in type_phase.casefold():
             m_ff_0 *= mission[type_phase]
         else:
             if type_driven.casefold() == 'jet': # Check type
                 # Cruise case.
-                if type_phase.casefold() == 'cruise':
+                if 'cruise' in type_phase.casefold():
                     V = mission[type_phase]['speed']
                     c = mission[type_phase]['c']
                     L_D = mission[type_phase]['L/D']
                     R = mission[type_phase]['range']
                     m_ff_range = np.exp(-R*c/(V*L_D))
                     m_ff_0 *= m_ff_range
-                else: # loiter case.
+                # loiter case.
+                elif 'loiter' in type_phase.casefold(): 
                     c = mission[type_phase]['c']
                     L_D = mission[type_phase]['L/D']
                     t = mission[type_phase]['endurance']
                     m_ff_endurance = np.exp(-t*c/(L_D))
                     m_ff_0 *= m_ff_endurance
             else: # propeller case.
-                if type_phase.casefold() == 'cruise':
+                if 'cruise' in type_phase.casefold():
                     c = mission[type_phase]['c']
                     L_D = mission[type_phase]['L/D']
                     R = mission[type_phase]['range']
                     eta_p = mission[type_phase]['eta_p']
                     m_ff_range = np.exp(-R*c/(375*eta_p*L_D))
                     m_ff_0 *= m_ff_range
-                else: # loiter case.
+                elif 'loiter' in type_phase.casefold(): # loiter case.
                     V = mission[type_phase]['speed']
                     c = mission[type_phase]['c']
                     L_D = mission[type_phase]['L/D']
@@ -77,10 +81,25 @@ def fuel_fraction_mission(mission:dict,
                     m_ff_endurance = np.exp(-t*V*c/(375*eta_p*L_D))
                     m_ff_0 *= m_ff_endurance
         if weight_changes is not None:
-            if phase_num in np.asarray(list(weight_changes.keys()),dtype=int):
-                initial_phase_weight = weight_takeoff_guess*m_ff_0
-                final_phase_weight = initial_phase_weight - weight_changes[str(phase_num)]
-                m_ff_0 *= final_phase_weight/initial_phase_weight
+            if str(phase_num) in weight_changes.keys(): # Check if the current phase have weight change.
+                initial_weight = weight_takeoff_guess*m_ff_0
+                final_weight = initial_weight + weight_changes.get(str(phase_num),0)
+                weight_ratio = final_weight/initial_weight # These value is used in the next iteration
+                w_rs[str(phase_num)] = weight_ratio
+                var_aux.append(phase_num)
+        # Check if the current phase need correction by weight ratio
+        # for the fuel fraction calculation.
+        if len(var_aux) > 0:
+            if phase_num-1 == var_aux[-1]:
+                # Check actual case
+                if 'cruise' in type_phase.casefold():
+                    m_ff_save = m_ff_range
+                    m_ff_0 /= m_ff_range
+                elif 'loiter' in type_phase.casefold():
+                    m_ff_save = m_ff_endurance
+                    m_ff_0 /= m_ff_endurance
+                m_ff_c = (1-(1-m_ff_save)*w_rs[str(phase_num-1)])
+                m_ff_0 *= m_ff_c
     return m_ff_0
 def iterative_weight_estimation(w_takeoff:float,
                                 weight_payload:float,
@@ -298,34 +317,59 @@ def sensitivity_4phase(driven_type:str,B:float,D:float,
     return dWto
 #%%
 # E.X Propeller
-w_crew = 175*6 # lbs
-w_pl = 200 # lbs
-driven_type = 'propeller'
+w_crew = 200 # lbs
+w_pl = 500*20+2000 # lbs
+driven_type = 'jet'
 mission ={
-'start': 0.992,
-'taxi': 0.996,
-'takeoff': 0.996,
-'climb': 0.99,
-'cruise': {'speed': 250, 
-        'c': 0.5, 
-        'L/D': 11, 
-        'range': 1000, 
-        'eta_p': 0.82},
-'descent': 0.99278,
-'landing': 0.992
+'start': 0.99,
+'taxi': 0.99,
+'takeoff': 0.99,
+'climb_1': 0.971,
+'cruise_1': {'speed': 459*1.15, 
+        'c': 0.6, 
+        'L/D': 7, 
+        'range': 300-47},
+'loiter_1': {'endurance': 0.5,
+        'c': 0.6,
+        'L/D': 9},
+'descent_1': 0.99,
+'cruise dash out':{'speed':400*1.15,
+          'range':100,
+          'c':0.9,
+          'L/D':4.5},
+'drop': 1,
+'loiter strafe': {'endurance': 5/60,
+            'c': 0.9,
+            'L/D': 4.5},
+'cruise dash in':{'speed':450*1.15,
+          'range':100,
+          'c':0.9,
+          'L/D':5.5},
+'climb_2': 0.969,
+'cruise_4':{'speed':488*1.15,
+          'c':0.6,
+          'L/D':7.7,
+          'range':300-47},
+'descent_2': 0.99,
+'landing': 0.995
 }
-w_to_guess = 7000
+w_to_guess = 60000
 mff = fuel_fraction_mission(
     mission,
-    driven_type
+    driven_type,
+    weight_takeoff_guess=w_to_guess,
+    weight_changes={
+        '9':-20*500, # Drop payload
+        '10':-2000 # Drop ammo
+    }
 )
 fuel_fractions = {
     'total':mff,
-    'reserve':0.25,
+    'reserve':0,
     'liquids':0.5/100
 }
-A=0.0966
-B=1.0298
+A=0.5091
+B=0.9505
 w_e,w_to,w_tof,C,D = iterative_weight_estimation(
     w_to_guess,w_pl,w_crew,fuel_fractions,A,B)
 
