@@ -110,7 +110,7 @@ class OperationWeight:
                                     B:float,
                                     tolerance:float=0.1/100) -> float:
         """
-        Determine the empty weight of the aircraft.
+        Determine the aircraft empty weight.
 
         Inputs:
         -------
@@ -256,7 +256,7 @@ class OperationWeight:
                     'Cp':float,         # Only propeller
                     'Cj':float,         # Only jet
                     'V':float,          # No applies for propeller
-                    'eta_p':float,      # No ap
+                    'eta_p':float,      # No applies for jet
                     'L/D':float
                 }
                 'dEndurance': {
