@@ -1,7 +1,9 @@
 #%%
+from xml.etree.ElementPath import ops
+
 import numpy as np
 from weights_n_fuel_fractions import OperationWeight as OW
-
+#%%
 
 # mac = v/a; a = sqrt(gamma*R*T);
 #               gamma = 1.4; R = 287; T@altitude.
@@ -124,3 +126,19 @@ B=0.9647
 w_e,w_to,w_tof,C,D = OW.iterative_weight_estimation(
     w_to_guess,payload,crew,fuel_fractions,A,B)
 
+
+print(f"Takeoff weight: {w_to:.2f} lbs")
+print(f"Empty weight: {w_e:.2f} lbs")
+
+# sensitivity analysis
+cruise_1_parameter_mission_p = {
+    'n':0.85,
+    'c':0.4,
+    'L/D':13,
+    'R':329,
+    'V':0.75*210,
+}
+weights_sens = OW.sensitivity_weights(A,B,C,D,w_to)
+dWto_roe_cruise1 = OW.sensitivity_4phase(driven_type,B,D,w_to,fuel_fractions,cruise_1_parameter_mission_p)
+
+# %%

@@ -1,6 +1,24 @@
 import numpy as np
 from data_base import coefficients
 class OperationWeight:
+    def isa_conditions(h=None):
+        R = 287 # J/kg*K
+        g = 9.80665 # m/s2
+        t0 = 288.16 #K
+        rho0 = 1.225 #kg/m3
+        a = -6.5e-3 # K/m
+        if h is None or h == 0:
+            return rho0 * 0.001941, t0
+        else: # Gradient
+            if h <=11e3:
+                t = t0+a*h
+                rho = rho0*(t/t0)**-(g/(a*R)+1)
+            else: # Isothermal
+                h1 = 11e3
+                t1 = t0+a*h1
+                rho1 = rho0*(t1/t0)**-(g/(a*R)+1)
+                rho = rho1*np.exp(-(g/(R*t1))*(h-h1)) 
+        return rho*0.001941,t1 # rho [slugs/ft3], t [K]
     @staticmethod
     def fuel_fraction_mission(mission:dict,
                             type_driven:str,
@@ -13,9 +31,6 @@ class OperationWeight:
         -------
         type_driven: str |
             Propulsion type: {'jet','propeller'}
-
-        number_phases: int |
-            Number of phases in the missio.
 
         weight_takeoff_guess: float | None
             Initial guess takeoff weight [lb].
@@ -274,12 +289,12 @@ class OperationWeight:
         C = m_ff0*(1+m_ff_r)-m_ff_l-m_ff_r 
         F = -B*np.square(w_to)*(1+m_ff_r)*m_ff0/(C*w_to*(1-B)-D)
         # Take mission parameters.
-        V = parameter_mission_p.get('V',1)
-        c = parameter_mission_p.get('c',1)
-        L_D = parameter_mission_p.get('L/D',1)
-        n = parameter_mission_p.get('n',1)
-        E = parameter_mission_p.get('E',1)
-        R = parameter_mission_p.get('R',1)
+        V = parameter_mission_p.get('V',np.nan)
+        c = parameter_mission_p.get('c',np.nan)
+        L_D = parameter_mission_p.get('L/D',np.nan)
+        n = parameter_mission_p.get('n',np.nan)
+        E = parameter_mission_p.get('E',np.nan)
+        R = parameter_mission_p.get('R',np.nan)
         if driven_type.casefold() == 'propeller':
             partials = {
                 'range':{
