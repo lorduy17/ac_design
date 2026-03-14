@@ -74,3 +74,16 @@ for partials.
 * Para determinar las lineas que me determina la zona de diseño,
 importante tener en cuenta lo que realmente me afecta la mision.
 
+~~~
+FAR 23
+Stall speed for
+    single engine: Vs <=  61 kts@W_TO
+    multiengine: Vs <=  61 kts@W_TO<6000lb
+
+Stall speed not ve' requierements for FAR 25
+
+FAR 23
+Take off distance:
+    CL relation:
+        CL_TO = CL_max_to/1.21
+    S_TO/S_TOG = 1.66

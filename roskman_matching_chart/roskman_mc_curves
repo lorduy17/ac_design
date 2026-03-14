@@ -1,0 +1,33 @@
+import matplotlib.pyplot as plt
+
+class curves:
+    def __init__(self,wing_loading):
+        self.wing_loading = wing_loading
+
+    def speed(self,w_to,CL):
+        plt.plot()
+
+    def take_off(self,power_loading,CL):
+        plt.plot(self.wing_loading,power_loading,label=f'CL={CL}')
+        plt.grid()
+        plt.xlabel('Wing Loading (N/m^2)')
+        plt.ylabel('Power Loading (N/W)')
+        plt.title('Take-off Distance Curves')
+
+    
+if __name__ == "__main__":
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mc_operations import mc_operations
+    # e,x. Take-off distance for FAR 23
+    CL = [1.2,1.6,2,2.4]
+    plt.figure(figsize=(10,6))
+    w_to = np.linspace(10, 50, 100)
+    curves_obj = curves(w_to)
+    for i in CL:
+        mc = mc_operations(w_to)
+        power_loading = mc.take_off_distance_far23(s_to=1500, sigma=0.8, CL_max_TO=i)
+        curves_obj.take_off(power_loading,CL=i)
+    plt.grid()
+    plt.legend()
+    plt.show()
