@@ -110,7 +110,7 @@ class mc_ops:
             wing_load_takeoff = wing_load_landing/w_ratio
             return wing_load_takeoff # per CL_max
     @staticmethod
-    def  climb(
+    def areas_f_Wset(
             a:float,
             d:float,
             c:float,
@@ -143,98 +143,179 @@ class mc_ops:
         result : dict
             Dict with f and S_wet values.
         """
-        # cd0 = f/S
         s_wet = 10**c*w_to**d
         f = np.exp(a)*np.power(s_wet,b)
         result = dict(f=f, s_wet=s_wet)
         return result
     def drag_polar_estimation(
-            wing_load: float,
-            w_to: float,
-            f: float,
-            S_wet: float,
-            AR: float,
-            e: dict,
-            delta_CD0: dict
-    ) -> dict:
+            wing_load:float,
+            w_to:float,
+            f:float,
+            AR:float,
+            e_owswald:dict,
+            delta_CD0:dict    
+    ):
         """
-        Estimate the drag polar coefficients (CD0 and k) for multiple configurations.
-
-        This method uses a simple drag polar model:
-          CD = CD0 + k * CL^2
-        where:
-          CD0 (parasite drag at CL=0) is computed from f/S (clean condition) plus
-          configuration-specific increments from delta_CD0.
-          k = 1/(pi * AR * e).
+        Calulcate values of CD0 and k in different configurations.
 
         Parameters
         ----------
-        wing_load : float
-            Wing loading [lb/ft^2].
-        w_to : float
-            Takeoff weight [lb].
-        f : float
-            Equivalent parasite drag coefficient times area (unitless).
-        S_wet : float
-            Wetted area [ft^2] (included for completeness, not used in current model). 
-        AR : float
-            Wing aspect ratio.
-        e : dict
-            Oswald efficiency factors for configurations.
-            Required key: 'clean'. Optional: 'TO_flaps', 'Landing_flaps', 'landing_gear'.
         delta_CD0 : dict
-            Configuration drag-rise increments with same keys as `e`.
+            Dict with values as increment of CD0 in different configurations. 
+            
+            Structure
 
-            Example:
-            >>> delta_CD0 = {
-            >>>     'clean': 0.0,
-            >>>     'TO_flaps': 0.015,
-            >>>     'Landing_flaps': 0.04,
-            >>>     'landing_gear': 0.01
-            >>> }
+                delta_CD0 = {
+                    'clean': '0',
+                    'TO_flaps': '.01 - .02',
+                    'Landing_flaps': '.055 - .075',
+                    'landing_gear': '.015 - .025'
+                }
+                
+        e_owswald : dict
+            Dict with values as Oswald efficiency factor in different configurations.
+
+            Structure
+
+                e_owswald = {
+                    'clean': '0.8 - 0.85',
+                    'TO_flaps': '0.75 - 0.8',
+                    'Landing_flaps': '0.7 - 0.75',
+                }
+        wing_load : float
+            Wing loading.
+        w_to : float
+            Takeoff weight.
+        f : float
+            Equivalent parasite area.
+        AR : float
+            Aspect ratio of the wing.
+
+        
 
         Returns
         -------
-        dict
-            Dictionary containing:
-              - S: wing area [ft^2]
-              - cd0_clean: clean zero-lift drag coefficient
-              - polar: nested config dictionary with 'CD0' and 'k'
-
-            Example:
-            {
-                'S': ..., 'cd0_clean': ..., 
-                'polar': {
-                    'clean': {'CD0': ..., 'k': ...},
-                    'TO_flaps': {...},
-                    ...
+        result : dict
+            Dict with values of CD0 and k in different configurations. Structure
+    
+                result = {
+                    'clean': dict(cd0=cd0_clean, k=k_clean),
+                    'take-off':{
+                        'gear_up': dict(cd0=cd0_to_flaps, k=k_to_flaps),
+                        'gear_down': dict(cd0=cd0_to_flaps + delta_CD0.get('landing_gear',0), k=k_to_flaps)
+                        },
+                    'landing':{
+                        'gear_up': dict(cd0=cd0_landing_flaps, k=k_landing_flaps),
+                        'gear_down': dict(cd0=cd0_landing_gear+delta_CD0.get('landing_gear',0), k=k_landing_flaps)
+                        }
                 }
-            }
-
-        Notes
-        -----
-        * S_wet is accepted for compatibility with Roskam-style formulas,
-          but this implementation uses `f/S` for CD0 (clean) and ignores S_wet directly.
+        
+        **Note**
+            the values are suggest by Roskman. Can use another values suggest user creteria.  
         """
-        # core computation
-        S = w_to / wing_load
-        cd0_clean = f / S
-
-        polar = {}
-        config_list = ['clean', 'TO_flaps', 'Landing_flaps', 'landing_gear']
-
-        for cfg in config_list:
-            delta = float(delta_CD0.get(cfg, 0.0))
-            e_cfg = float(e.get(cfg, e.get('clean', 1.0)))
-            k_cfg = 1.0 / (np.pi * AR * e_cfg)
-
-            polar[cfg] = {
-                'CD0': cd0_clean + delta,
-                'k': k_cfg,
+        S = w_to/wing_load
+        cd0_clean = f/S
+        cd0_to_flaps = cd0_clean + delta_CD0.get('TO_flaps',0)
+        cd0_landing_flaps = cd0_clean + delta_CD0.get('Landing_flaps',0)
+        cd0_landing_gear = cd0_clean + delta_CD0.get('landing_gear',0)
+        k_clean = 1/(np.pi*e_owswald.get('clean',0)*AR)
+        k_to_flaps = 1/(np.pi*e_owswald.get('TO_flaps',0)*AR)
+        k_landing_flaps = 1/(np.pi*e_owswald.get('Landing_flaps',0)*AR)
+        result = {
+            'clean': dict(cd0=cd0_clean, k=k_clean),
+            'take-off':{
+                'gear_up': dict(cd0=cd0_to_flaps, k=k_to_flaps),
+                'gear_down': dict(cd0=cd0_to_flaps + delta_CD0.get('landing_gear',0), k=k_to_flaps)
+            },
+            'landing':{
+                'gear_up': dict(cd0=cd0_landing_flaps, k=k_landing_flaps),
+                'gear_down': dict(cd0=cd0_landing_gear+delta_CD0.get('landing_gear',0), k=k_landing_flaps)
             }
-
-        return {
-            'S': S,
-            'cd0_clean': cd0_clean,
-            'polar': polar,
         }
+        return result
+    def rate_climb(
+            FAR:int,
+            wing_load:np.asarray,
+            sigma:float,
+            cd0:float,
+            k:float,
+            rate_climb:float=0.0,
+            grandient_climb:float=0.0,
+            v:float=0.0,
+            eta_p:float=None,
+            cl_max:float=None,
+            e_num:int=1,
+            driven_type:str='jet'  
+    ):
+        """
+        Def ...
+
+        Parameters
+        ----------
+        Far : int
+            Federal Aviation Regulation (FAR) part number, either 23 or 25.
+        wing_load : np.asarray
+            Wing loading of the aircraft, typically in pounds per square foot.
+        sigma : float
+            Density ratio of the air at the climb conditions compared to sea level standard conditions.
+        cd0 : float
+            Zero-lift drag coefficient of the aircraft.
+        k : float
+            Induced drag factor of the aircraft, which is related to the aspect ratio and Oswald
+        rate_climb : float, (ft/min)
+            Desired rate of climb.
+        eta_p : float | default None if FAR 25
+            Propulsive efficiency of the aircraft's engines.
+        driven_type : str | default 'jet'
+
+        Returns
+        -------
+        power_load : np.asarray
+        """
+        if FAR == 23:
+            # power loading by rate of climb
+            if rate_climb == 0:
+                power_load_by_rate_climb = np.nan
+            else:
+                rcp = rate_climb/33000 # rate of climb in ft/min
+                cl_32 = np.sqrt(3*cd0/k)
+                cd = 4*cd0
+                ae_ef = cl_32/cd
+                power_load_by_rate_climb = ((rcp+np.fraction(
+                    np.sqrt(wing_load),
+                    19*ae_ef*np.sqrt(sigma)
+                ))/eta_p)**(-1)
+            # power loading by climb gradient rate
+            """
+            Preguntar porque para el caso de gradiente de aseceso, el cl que se usa
+            es 0.2 menos que el cl max. (muy posiblemente la respuesta sea si
+            porque en el ejemplo de Roskman se hace eso, pero no se especifica en el libro)
+            """
+            if grandient_climb == 0:
+                power_load_by_gradient_climb = np.nan
+            else:
+                cl = cl_32 - 0.2
+                cd = cd0 + k*cl**2
+                ae_ef = cl/cd
+                cgr_plus_ae = grandient_climb + np.fraction(1,ae_ef)
+                power_load_by_gradient_climb = np.fraction(
+                    np.sqrt(sigma*cl)*18.97*eta_p,
+                    cgr_plus_ae*np.sqrt(wing_load)
+                )
+            power_loading=dict(
+                rate_climb=power_load_by_rate_climb,
+                gradient_climb=power_load_by_gradient_climb
+            )
+            return power_loading
+        else: # FAR 25
+            if driven_type.casefold() == 'jet':
+                cd = cd0 + k*cl_max**2
+                ae_ef = cl_max/cd
+                thurst_weight_ratio_aeo=np.fraction(1,ae_ef)+grandient_climb
+                thurst_weight_ratio_oei = np.fraction(e_num,e_num-1)*thurst_weight_ratio_aeo
+                thurst_weight_ratio = dict(
+                    aeo=thurst_weight_ratio_aeo,
+                    oei=thurst_weight_ratio_oei
+                )
+                return thurst_weight_ratio
+            
