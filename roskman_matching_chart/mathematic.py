@@ -239,9 +239,10 @@ class mc_ops:
             sigma:float,
             cd0:float,
             k:float,
+            configurations:dict,
             rate_climb:float=0.0,
             grandient_climb:float=0.0,
-            v:float=0.0,
+            w_to:float=0.0,
             eta_p:float=None,
             cl_max:float=None,
             e_num:int=1,
@@ -249,6 +250,16 @@ class mc_ops:
     ):
         """
         Def ...
+
+        note:
+            Configuration considered for cumplies with the regulation
+            FAR 23
+             AOE (All Engines Operating):
+              - Rate of climb: gear-up, take off flaps, max. cont. power
+              - Gradient of climb: gear-down, landing flaps, take-off. power
+             One Engine Inoperative (OEI):
+              - Rate of climb: gear-up, flaps most favorable, take-off power in operative engine, max. cont. power in operative engine
+            FAR 25:
 
         Parameters
         ----------
@@ -272,19 +283,30 @@ class mc_ops:
         -------
         power_load : np.asarray
         """
-        if FAR == 23:
+        # Check configuration
+        if configurations:
+            missing_conf = []
+            aux_var = ['clean','take-off', 'landing']
+            for c in configurations.keys():
+                if c not in aux_var:
+                    missing_conf.append(c)
+        if driven_type.casefold() == 'propeller' or FAR == 23:
+            # requierments by regulation
+            if FAR == 23 or (FAR == 25 and driven_type.casefold() == 'propeller'):
+               
+
+              
+            else: # FAR 25, but propeller driven
             # power loading by rate of climb
-            if rate_climb == 0:
-                power_load_by_rate_climb = np.nan
-            else:
-                rcp = rate_climb/33000 # rate of climb in ft/min
-                cl_32 = np.sqrt(3*cd0/k)
-                cd = 4*cd0
-                ae_ef = cl_32/cd
-                power_load_by_rate_climb = ((rcp+np.fraction(
-                    np.sqrt(wing_load),
-                    19*ae_ef*np.sqrt(sigma)
-                ))/eta_p)**(-1)
+        
+                # rcp = rate_climb/33000 # rate of climb in ft/min
+                # cl_32 = np.sqrt(3*cd0/k)
+                # cd = 4*cd0
+                # ae_ef = cl_32/cd
+                # power_load_by_rate_climb = ((rcp+np.fraction(
+                #     np.sqrt(wing_load),
+                #     19*ae_ef*np.sqrt(sigma)
+                # ))/eta_p)**(-1)
             # power loading by climb gradient rate
             """
             Preguntar porque para el caso de gradiente de aseceso, el cl que se usa
@@ -309,6 +331,8 @@ class mc_ops:
             return power_loading
         else: # FAR 25
             if driven_type.casefold() == 'jet':
+                # requierments by regulation
+
                 cd = cd0 + k*cl_max**2
                 ae_ef = cl_max/cd
                 thurst_weight_ratio_aeo=np.fraction(1,ae_ef)+grandient_climb
