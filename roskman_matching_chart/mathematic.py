@@ -283,63 +283,119 @@ class mc_ops:
         -------
         power_load : np.asarray
         """
-        # Check configuration
-        if configurations:
-            missing_conf = []
-            aux_var = ['clean','take-off', 'landing']
-            for c in configurations.keys():
-                if c not in aux_var:
-                    missing_conf.append(c)
-        if driven_type.casefold() == 'propeller' or FAR == 23:
-            # requierments by regulation
-            if FAR == 23 or (FAR == 25 and driven_type.casefold() == 'propeller'):
-               
-
-              
-            else: # FAR 25, but propeller driven
-            # power loading by rate of climb
         
-                # rcp = rate_climb/33000 # rate of climb in ft/min
-                # cl_32 = np.sqrt(3*cd0/k)
-                # cd = 4*cd0
-                # ae_ef = cl_32/cd
-                # power_load_by_rate_climb = ((rcp+np.fraction(
-                #     np.sqrt(wing_load),
-                #     19*ae_ef*np.sqrt(sigma)
-                # ))/eta_p)**(-1)
-            # power loading by climb gradient rate
-            """
-            Preguntar porque para el caso de gradiente de aseceso, el cl que se usa
-            es 0.2 menos que el cl max. (muy posiblemente la respuesta sea si
-            porque en el ejemplo de Roskman se hace eso, pero no se especifica en el libro)
-            """
-            if grandient_climb == 0:
-                power_load_by_gradient_climb = np.nan
-            else:
-                cl = cl_32 - 0.2
-                cd = cd0 + k*cl**2
-                ae_ef = cl/cd
-                cgr_plus_ae = grandient_climb + np.fraction(1,ae_ef)
-                power_load_by_gradient_climb = np.fraction(
-                    np.sqrt(sigma*cl)*18.97*eta_p,
-                    cgr_plus_ae*np.sqrt(wing_load)
-                )
-            power_loading=dict(
-                rate_climb=power_load_by_rate_climb,
-                gradient_climb=power_load_by_gradient_climb
-            )
-            return power_loading
-        else: # FAR 25
-            if driven_type.casefold() == 'jet':
-                # requierments by regulation
+        if (FAR==25 and driven_type.casefold() == 'propeller') or FAR == 23:
+            # requierments by regulation
+            # AEO rate of climb requirement (FAR 23.65)
+             
+            if rate_climb > 0:
+                AEO_rate_climb = rate_climb
+            else: 
+                AEO_rate_climb= 300
 
-                cd = cd0 + k*cl_max**2
-                ae_ef = cl_max/cd
-                thurst_weight_ratio_aeo=np.fraction(1,ae_ef)+grandient_climb
-                thurst_weight_ratio_oei = np.fraction(e_num,e_num-1)*thurst_weight_ratio_aeo
-                thurst_weight_ratio = dict(
-                    aeo=thurst_weight_ratio_aeo,
-                    oei=thurst_weight_ratio_oei
-                )
-                return thurst_weight_ratio
+            cd0 = configurations["take-off"]["gear_up"][cd0]
+            k = configurations["take-off"]["gear_up"][k]
+            rcp = 33000/AEO_rate_climb
+            cl_32 = (3*cd0/k)**(3/4)
+            cd = 4*cd0
+            ae_ef = cl_32/cd
+            w_p = ((rcp+np.fraction(
+                np.sqrt(wing_load),
+                19*ae_ef*np.sqrt(sigma)
+            ))/eta_p)**(-1)
+            if rate_climb > 0:
+                AEO_power_load = {f'by R/C':w_p}
+            else:
+                AEO_power_load = {f'.65 by R/C':w_p}
+            # AEO climb gradient rate requieriment (FAR 23.65)
+            cd0 = configurations["landing"]["gear_down"][cd0]
+            k = configurations['landing']["gear_down"][k]
+            if grandient_climb > 0:
+                gradient_rate = grandient_climb
+            else:
+                gradient_rate = 1/12 # By regulation
+            cl_32 = cl_32 - 0.2
+            ae_ef_inv = 1/(cl_32/cd)
+            try:
+                cgrp = np.fraction(gradient_rate+ae_ef_inv,np.sqrt(cl))
+                w_p = np.fraction(18.97*eta_p*np.sqrt(sigma),cgrp*wing_load)
+                AEO_power_load.append({'.65 by gradient rate': w_p})
+            except ValueError as e:
+                cgrp = np.nan
+                print(f'Error {e}')
+
+            # AEO climb gradient requirement (FAR 23.77)
+            cd0 = configurations["landing"]["gear_down"][cd0]
+            k = configurations['landing']["gear_down"][k]
+            if gradient_rate > 1/30:
+                gradient_rate = grandient_climb
+            else:   
+                gradient_rate = 1/30 # By regulation
+            try:
+                cgrp = np.fraction(gradient_rate+ae_ef_inv,np.sqrt(cl))
+            except ValueError as e:
+                cgrp = np.nan
+                print(f'Error {e}')
+            w_p = np.fraction(18.97*eta_p*np.sqrt(sigma),cgrp*wing_load)
+            AEO_power_load.append({'.77 by gradient rate': w_p})
+
+            # OEI rate climb requirement (FAR 23.67)
+            try:
+                cd0 = configurations["clean"][cd0]
+                k = configurations['clean'][k]
+                w_to = w_to.get('w_to',np.nan)
+                rho = 0.00237
+                cl_max = cl_32 + 0.2
+                v_stall = np.sqrt(2*w_to/(rho*cl_max))*60
+                rate_climb = 0.027*v_stall**2
+                rcp = 33000/rate_climb
+                w_p = ((rcp+np.fraction(
+                    np.sqrt(wing_load),
+                    19*ae_ef*np.sqrt(sigma)
+                ))/eta_p)**(-1)
+                OEI_power_load = {
+                    '.67 by R/C': w_p
+                }
+            except ValueError as e:
+                print(f'Error {e}, returns OEI_power_load={np.nan}')
+                OEI_power_load = np.nan
+
+            power_load = dict(
+                AEO=AEO_power_load,
+                OEI=OEI_power_load
+            )
+            return power_load
+         
+        else: # FAR 25
+            # OEI .111
+            # conf gear up take-off flaps, ground effect, 1.2*V_s_take-off
+            # requierments by regulation
+            cd0 = configurations["take-off"]["gear_up"][cd0]
+            k = configurations["take-off"]["gear_up"][k]
+            if gradient_rate > 0.012:
+                gradient_rate = grandient_climb
+            else:
+                gradient_rate = 0.012
             
+            cl = np.sqrt(cd0/k)-0.2
+            cd = cd0 + cd0
+            ae_ef = cl/cd
+            thurst_weight_ratio_aeo=np.fraction(1,ae_ef)+grandient_climb
+            thurst_weight_ratio_oei = np.fraction(e_num,e_num-1)*thurst_weight_ratio_aeo
+            thurst_weight_ratio = dict(
+                aeo=thurst_weight_ratio_aeo,
+                oei=thurst_weight_ratio_oei
+            )
+            return thurst_weight_ratio
+            
+
+
+
+
+            ##### Importante para jett se traba con empuje
+            """
+            LANDIING GEAR SIZING
+
+            PARA PATIN LOS LOS ANGULOS DEBEN SER MENOR A ALPHA STALL
+            6
+            """

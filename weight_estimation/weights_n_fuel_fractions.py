@@ -184,7 +184,7 @@ class OperationWeight:
             w_tof = 10**(A+B*np.log10(C*w_takeoff-D))
             if error < tolerance:
                 break
-        return w_e_allowed,w_takeoff,w_tof,C,D
+        return w_e_allowed,w_takeoff,w_tof,C,D,iteration
     def sensitivity_weights(A:float,B:float,C:float,D:float,
                 weight_takeoff:float):
         """
@@ -321,7 +321,7 @@ class OperationWeight:
                 },
                 'endurance':{
                     'E':c/(L_D),
-                    'Cj':E/(L_D),
+                    'Cj':E/(L_D),                           
                     'L/D':-E*c/(L_D**2)
                 }
             }
