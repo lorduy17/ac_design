@@ -1,13 +1,11 @@
 #%%
-from xml.etree.ElementPath import ops
-import numpy as np
 from weights_n_fuel_fractions import OperationWeight as OW
 #%%
 # CLASS WORK 
 w_crew = 200*9 # lbs
 w_pl = 420000 # lb
 driven_type = 'jet'
-part_range = 6000*0.47*0.621371
+part_range = 6000*0.43*0.621371
 mission ={
 'start': 0.99,
 'taxi': 0.99,
@@ -29,11 +27,9 @@ mission ={
 'landing': 0.99
 }
 w_to_guess = 9e5 # lbs
-
 """
 valor de wto por la velocidad más que nada
 """
-
 mff = OW.fuel_fraction_mission(
     mission,
     driven_type,
@@ -49,7 +45,6 @@ fuel_fractions = {
 }
 A=-0.2009 # from roskman table 2.15
 B=1.1037 # from roskman table 2.15
-
 w_e,w_to,w_tof,C,D,iters = OW.iterative_weight_estimation(
     w_to_guess,w_pl,w_crew,fuel_fractions,A,B,tolerance=0.001/100)
 _print = f"""
@@ -95,9 +90,7 @@ Loiter:
         aerodynamic efficient.
 """
 print(_print)
-
 #%%
-
 ## SENSITIVITY ANALYSIS
 dWto = OW.sensitivity_weights(A,B,C,D,
                            w_to)
@@ -131,8 +124,7 @@ parameter_loiter = {
 dwto_loiter = OW.sensitivity_4phase(driven_type,B,D,w_to,fuel_fractions,parameter_loiter)
 dWto_dE = dwto_loiter['dEndurance']['E']
 dWto_dLD_loiter = dwto_loiter['dEndurance']['L/D']
-
-delta_range = 0.47*(7350-6000)*0.621371# sm
+delta_range = 0.43*(7350-6000)*0.621371# sm
 _p = f"""
 SENSITIVITY ANALYSIS
 --------------------
@@ -163,19 +155,3 @@ for:
 """
 print(_p)
 # %%
-
-
-"""
-describe the mission (each phase).
-
-assumptions of parameters (L/D, c, speed, range, endurance, etc) for each phase.
-
-weight estimation using the iterative method. (show process -> min change in calc block)
-
-results: takeoff weight, empty weight, fuel weight. adb sensitivity analysis: how much does takeoff weight change with changes in parameters (L/D, c, speed, range, endurance, etc) for each phase. (show process -> min change in calc block)
-
-sanity check: compare with similar aircraft (if data is available) or with a simple estimation method (e.g. Breguet range equation for cruise phase).
-
-final conclussions and references
-
-"""
