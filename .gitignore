@@ -1,5 +1,5 @@
 # Virtual environment
-.venv/
+venv/
 
 # Python cache
 __pycache__/
@@ -19,5 +19,8 @@ support_code/
 References/
 
 weight_estimation/__pycache__
+weight_estimation/'Twing engine y jet figther.xlsx'
+
+temp.txt
 
 
